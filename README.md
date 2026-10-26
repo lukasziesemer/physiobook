@@ -129,7 +129,7 @@ Die Unit-Dateien und das Backup-Skript liegen im Repository unter `deploy/`.
 ### Voraussetzungen
 
 - Ein Server mit **Ubuntu 24.04** (z.B. Hetzner Cloud ab CX22)
-- Eine **Domain** (z.B. `kalender.therapiezentrum-ziesemer.de`), die per DNS (A-Record) auf die IP-Adresse des Servers zeigt
+- Eine **Domain** (z.B. `kalender.example.de`), die per DNS (A-Record) auf die IP-Adresse des Servers zeigt
 - **SSH-Zugang** zum Server (z.B. ueber das eingebaute Terminal auf Windows/Mac/Linux)
 - Optional: Ein **SMTP-Konto** fuer den E-Mail-Versand (z.B. von deinem Webhoster, Mailgun oder Postmark)
 
@@ -225,22 +225,22 @@ SMTP_HOST=smtp.example.com
 SMTP_PORT=587
 SMTP_USER=praxis@example.com
 SMTP_PASS=dein-smtp-passwort
-SMTP_FROM="Therapiezentrum Ziesemer <info@therapiezentrum-ziesemer.de>"
+SMTP_FROM="Praxis Name <info@example.de>"
 
 # --- Domain ---
 # Die Domain, unter der die App erreichbar sein wird.
 # Wichtig fuer die Sicherheit: Nur Anfragen von dieser Domain werden akzeptiert.
-ALLOWED_ORIGIN=https://kalender.therapiezentrum-ziesemer.de
+ALLOWED_ORIGIN=https://kalender.example.de
 
 # --- Widget-Einbettung ---
 # Das Patienten-Widget wird per iFrame auf der Hauptwebsite eingebettet.
 # WIDGET_ORIGIN ist die einzige Domain, die das Widget einbetten darf (CSP frame-ancestors)
 # und deren API-Aufrufe aus dem iFrame erlaubt sind (CORS). Ohne "www." -- leite www
 # auf der Hauptwebsite auf die Adresse ohne www um.
-WIDGET_ORIGIN=https://therapiezentrum-ziesemer.de
+WIDGET_ORIGIN=https://example.de
 # Ziel-Domain fuer die postMessage-Events des Widgets. Wird beim Build (Schritt 7)
 # fest in die App eingebaut -- nach einer Aenderung neu bauen. Gleicher Wert wie WIDGET_ORIGIN.
-NEXT_PUBLIC_WIDGET_ORIGIN=https://therapiezentrum-ziesemer.de
+NEXT_PUBLIC_WIDGET_ORIGIN=https://example.de
 
 # --- Proxy ---
 # Immer auf "true" setzen, wenn die App hinter Nginx laeuft (was bei diesem Setup der Fall ist).
@@ -311,10 +311,10 @@ sudo nginx -t && sudo systemctl reload nginx
 Damit die App ueber eine sichere Verbindung (https://) erreichbar ist, brauchst du ein SSL-Zertifikat. Let's Encrypt stellt kostenlose Zertifikate aus:
 
 ```bash
-sudo certbot --nginx -d kalender.therapiezentrum-ziesemer.de
+sudo certbot --nginx -d kalender.example.de
 ```
 
-> Ersetze `kalender.therapiezentrum-ziesemer.de` durch deine echte Domain. Certbot fragt nach einer E-Mail-Adresse fuer Benachrichtigungen -- gib dort eine gueltige Adresse ein.
+> Ersetze `kalender.example.de` durch deine echte Domain. Certbot fragt nach einer E-Mail-Adresse fuer Benachrichtigungen -- gib dort eine gueltige Adresse ein.
 
 Zertifikate werden automatisch erneuert. Zum Testen:
 
@@ -357,12 +357,12 @@ systemctl list-timers 'physiobook-*'
 Teste, ob die App laeuft:
 
 ```bash
-curl https://kalender.therapiezentrum-ziesemer.de/api/health
+curl https://kalender.example.de/api/health
 ```
 
 Erwartete Antwort: `{"status":"ok","timestamp":"...","dbOk":true}`
 
-Oeffne jetzt `https://kalender.therapiezentrum-ziesemer.de` im Browser und melde dich mit deinem Passwort an.
+Oeffne jetzt `https://kalender.example.de` im Browser und melde dich mit deinem Passwort an.
 
 **Optional:** Richte ein kostenloses Monitoring ein (z.B. [UptimeRobot](https://uptimerobot.com) oder healthchecks.io), das dich per E-Mail benachrichtigt, falls die App nicht erreichbar ist.
 
@@ -498,9 +498,9 @@ Alle Einstellungen in der `.env`-Datei auf einen Blick:
 | `SMTP_USER` | Benutzername fuer den E-Mail-Server | `praxis@example.com` |
 | `SMTP_PASS` | Passwort fuer den E-Mail-Server | -- |
 | `SMTP_FROM` | Absendername und -adresse fuer E-Mails | `"Praxis <praxis@example.com>"` |
-| `ALLOWED_ORIGIN` | Domain, auf der die App laeuft | `https://kalender.therapiezentrum-ziesemer.de` |
-| `WIDGET_ORIGIN` | Domain, die das Widget per iFrame einbettet | `https://therapiezentrum-ziesemer.de` |
-| `NEXT_PUBLIC_WIDGET_ORIGIN` | Ziel-Domain der postMessage-Events des Widgets (wird beim Build eingebaut) | `https://therapiezentrum-ziesemer.de` |
+| `ALLOWED_ORIGIN` | Domain, auf der die App laeuft | `https://kalender.example.de` |
+| `WIDGET_ORIGIN` | Domain, die das Widget per iFrame einbettet | `https://example.de` |
+| `NEXT_PUBLIC_WIDGET_ORIGIN` | Ziel-Domain der postMessage-Events des Widgets (wird beim Build eingebaut) | `https://example.de` |
 | `TRUST_PROXY` | Immer `true` wenn hinter Nginx | `true` |
 | `HOSTNAME` | Adresse, auf der der Standalone-Server (`server.js`) lauscht | `127.0.0.1` |
 
@@ -510,7 +510,7 @@ Alle Einstellungen in der `.env`-Datei auf einen Blick:
 
 ## Widget-Integration auf der Hauptwebsite
 
-Das Patienten-Widget (`/widget`) wird per iFrame auf `therapiezentrum-ziesemer.de/termin-anfragen/` eingebettet.
+Das Patienten-Widget (`/widget`) wird per iFrame auf `example.de/termin-anfragen/` eingebettet.
 
 ### Funktionsweise
 

@@ -1,6 +1,6 @@
 [Unit]
 Description=physiobook (Terminkalender Praxis, Next.js standalone)
-Documentation=https://github.com/jukkler/physiobook#deployment-auf-einem-server
+Documentation=https://github.com/lukasziesemer/physiobook#deployment-auf-einem-server
 After=network.target
 
 [Service]

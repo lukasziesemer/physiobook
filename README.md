@@ -169,7 +169,7 @@ sudo install -d -m 700 -o physiobook-svc -g physiobook-svc /var/backups/physiobo
 ### Schritt 4 -- Code herunterladen und Abhaengigkeiten installieren
 
 ```bash
-sudo -u physiobook-svc -H git clone https://github.com/jukkler/physiobook.git /opt/physiobook
+sudo -u physiobook-svc -H git clone https://github.com/lukasziesemer/physiobook.git /opt/physiobook
 sudo -u physiobook-svc -H bash -c 'cd /opt/physiobook && npm ci'
 ```
 

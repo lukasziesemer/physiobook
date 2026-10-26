@@ -1,6 +1,6 @@
 [Unit]
 Description=physiobook: geprüfte lokale Datenbank-Kopie
-Documentation=https://github.com/jukkler/physiobook#backup
+Documentation=https://github.com/lukasziesemer/physiobook#backup
 
 [Service]
 Type=oneshot

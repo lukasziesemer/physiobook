@@ -8,14 +8,16 @@ Digitales Terminbuch fuer Physiotherapiepraxen. Verwaltet Termine, Blocker, Pati
 
 | Funktion | Beschreibung |
 |----------|-------------|
-| Kalender | Tages- und Wochenansicht mit Drag & Drop |
-| Termine | Einzeltermine und Serientermine (woechentlich), Status: Bestaetigt / Anfrage / Abgesagt |
-| Patienten | Stammdaten verwalten (Name, E-Mail, Telefon), Suche, CSV-Import |
+| Kalender | Tages-, Wochen- und Monatsansicht, Blocker, Suche nach freien Terminen, Loeschen aller Termine eines Zeitraums |
+| Termine | Einzeltermine und Serientermine (woechentlich oder alle 2/3/4 Wochen, bis 52 Termine), Aenderungen fuer einen Termin, alle folgenden oder die ganze Serie. Status: Bestaetigt / Anfrage / Abgesagt / Abgelaufen |
+| Patienten | Stammdaten verwalten (Name, E-Mail, Telefon), Suche, CSV-Import, Duplikate erkennen und zusammenfuehren |
 | Autocomplete | Beim Anlegen eines Termins werden bekannte Patienten vorgeschlagen und Kontaktdaten automatisch ausgefuellt |
-| Patienten-Widget | Oeffentliches Buchungsformular -- Patienten koennen selbst Termine anfragen (ohne Login) |
-| E-Mail-Erinnerungen | Automatische Benachrichtigung 24 Stunden vor dem Termin |
-| PDF-Archiv | Wochen-, Monats- oder Jahresuebersicht als PDF -- manueller Download oder automatischer E-Mail-Versand |
-| Verwaltung | SMTP, Blocker, Zeitslots, Auto-Archiv, Benachrichtigungen -- alles ueber die Weboberflaeche konfigurierbar |
+| Patienten-Widget | Oeffentliches Buchungsformular -- Patienten koennen selbst Termine anfragen (ohne Login). Offene Anfragen werden im Kalender bestaetigt oder abgelehnt |
+| Termin-E-Mails | Aus dem Terminformular eine E-Mail an den Patienten schreiben oder ihm eine Terminuebersicht per E-Mail senden |
+| E-Mail-Erinnerungen | Automatische Benachrichtigung 24 Stunden vor dem Termin (in der Verwaltung ein-/ausschaltbar) |
+| PDF-Archiv | Wochen-, Monats- oder Jahresuebersicht als PDF -- manueller Download oder automatischer E-Mail-Versand. Termine lassen sich aus einer Archiv-PDF wiederherstellen (PDF-Import) |
+| Verwaltung | Praxisinformationen, PDF-Archiv und -Import, Erinnerungen, Auto-Archiv, Kalender zuruecksetzen -- alles ueber die Weboberflaeche konfigurierbar |
+| E-Mail-Einstellungen | SMTP-Zugang, Benachrichtigungs-E-Mail, Test-E-Mail, Logo, Textvorlagen (Terminfenster, Terminerinnerung, Archivmail) und Signatur |
 
 ---
 
@@ -51,7 +53,10 @@ Anschliessend im Browser [http://localhost:3000](http://localhost:3000) oeffnen.
 | `npm run dev` | Entwicklungsserver starten (Port 3000) |
 | `npm run build` | Production-Build erstellen |
 | `npm run start` | Production-Server starten |
-| `npm test` | Unit-Tests ausfuehren |
+| `npm test` | Unit-Tests ausfuehren (Vitest) |
+| `npm run test:watch` | Unit-Tests im Watch-Modus |
+| `npm run lint` | ESLint ausfuehren |
+| `npm run db:generate` | Neue Migration aus `src/lib/db/schema.ts` erzeugen (drizzle-kit) |
 | `npm run db:migrate` | Datenbank-Migrationen ausfuehren |
 | `npm run db:seed` | Default-Admin und Settings anlegen |
 | `npm run reset-password -- <passwort>` | Admin-Passwort zuruecksetzen |
@@ -62,12 +67,14 @@ Anschliessend im Browser [http://localhost:3000](http://localhost:3000) oeffnen.
 
 | Bereich | Technologie |
 |---------|------------|
-| Framework | Next.js 16 (App Router, TypeScript, Standalone-Build) |
+| Framework | Next.js 16 (App Router, TypeScript, Standalone-Build), React 19 |
+| Styling | Tailwind CSS 4 |
 | Datenbank | SQLite via better-sqlite3 (WAL-Mode) |
-| ORM | Drizzle ORM |
+| ORM | Drizzle ORM (Migrationen in `drizzle/`) |
 | Auth | JWT (jose) + bcryptjs, HttpOnly-Cookie |
-| E-Mail | Nodemailer (async via Outbox-Pattern + Cron) |
-| PDF | pdfkit |
+| E-Mail | Nodemailer 10 (async via Outbox-Pattern + Cron; Termin-E-Mails aus dem Terminformular und Test-E-Mails werden direkt versendet) |
+| PDF | pdfkit (Erzeugung), pdf-parse (Import) |
+| Tests | Vitest |
 | Deployment | VPS mit systemd + Nginx + Let's Encrypt, Node.js 24 LTS |
 
 ---
@@ -79,12 +86,18 @@ src/
   app/
     dashboard/          Kalender (Tages-/Wochenansicht)
     patienten/          Patientenverwaltung (Stammdaten, CSV-Import)
-    verwaltung/         Einstellungen (SMTP, Archiv, Benachrichtigungen, Blocker, Slots)
+    verwaltung/         Einstellungen (Praxisinfos, Archiv, PDF-Import, Erinnerungen, Auto-Archiv, Reset)
+    email-einstellungen/ SMTP, E-Mail-Vorlagen, Logo und Signatur
     widget/             Oeffentliches Buchungs-Widget fuer Patienten
-    api/                REST-API (Appointments, Blockers, Patients, Slots, Requests, ...)
+    api/                REST-API (Appointments, Blockers, Patients, Slots, Requests, Contact, Cron, ...)
     login/              Login-Seite
-  components/           React-Komponenten (Calendar, Forms, PatientenClient, ...)
-  lib/                  DB, Auth, Overlap-Logik, Rate-Limiting, E-Mail, Reminders, PDF
+  components/           React-Komponenten (calendar/, dashboard/, forms/, verwaltung/, email-settings/, ui/)
+  lib/                  DB, Auth, Overlap-Logik, Serien, Rate-Limiting, E-Mail, Reminders, PDF
+    db/                 Schema, DB-Singleton, Migrations-Skript
+    cron/               Hintergrundaufgaben (Verfall, DSGVO-Cleanup, Auto-Archiv)
+  middleware.ts         Login-Pruefung und Content-Security-Policy
+  __tests__/unit/       Unit-Tests (Vitest)
+drizzle/                SQL-Migrationen
 scripts/
   seed.ts               Default-Admin + Settings anlegen
   reset-password.ts     Admin-Passwort zuruecksetzen
@@ -184,7 +197,7 @@ sudo nano /opt/physiobook/.env
 
 > **nano** ist ein einfacher Texteditor im Terminal. Aenderungen speichern: `Strg+O`, dann `Enter`. Editor beenden: `Strg+X`.
 
-Ersetze die Platzhalter mit deinen echten Werten. Werte **ohne Anfuehrungszeichen** eintragen, die Datei wird von systemd eingelesen. Hier ein Beispiel mit Erklaerungen:
+Ersetze die Platzhalter mit deinen echten Werten. Die Datei wird von systemd eingelesen und fuer die Hilfsskripte zusaetzlich per `. ./.env` in der Shell geladen. Werte mit Leerzeichen oder `<` `>` (z.B. `SMTP_FROM`) deshalb in **doppelte Anfuehrungszeichen** setzen, alle anderen Werte ohne. Hier ein Beispiel mit Erklaerungen:
 
 ```env
 # --- Datenbank ---
@@ -206,11 +219,13 @@ CRON_SECRET=und-noch-einen-dritten-zufallstext
 # Diese Daten bekommst du von deinem E-Mail-Anbieter (z.B. Webhoster, Mailgun, Postmark).
 # Wenn du (noch) keine E-Mails verschicken willst, lass die Werte leer --
 # die App funktioniert auch ohne, nur Erinnerungen und Archiv-Versand sind dann deaktiviert.
+# Die SMTP-Daten lassen sich auch spaeter unter "E-Mail Einstellungen" in der Weboberflaeche
+# eintragen; dort gespeicherte Werte haben Vorrang vor der .env.
 SMTP_HOST=smtp.example.com
 SMTP_PORT=587
 SMTP_USER=praxis@example.com
 SMTP_PASS=dein-smtp-passwort
-SMTP_FROM=Therapiezentrum Ziesemer <info@therapiezentrum-ziesemer.de>
+SMTP_FROM="Therapiezentrum Ziesemer <info@therapiezentrum-ziesemer.de>"
 
 # --- Domain ---
 # Die Domain, unter der die App erreichbar sein wird.
@@ -223,6 +238,9 @@ ALLOWED_ORIGIN=https://kalender.therapiezentrum-ziesemer.de
 # und deren API-Aufrufe aus dem iFrame erlaubt sind (CORS). Ohne "www." -- leite www
 # auf der Hauptwebsite auf die Adresse ohne www um.
 WIDGET_ORIGIN=https://therapiezentrum-ziesemer.de
+# Ziel-Domain fuer die postMessage-Events des Widgets. Wird beim Build (Schritt 7)
+# fest in die App eingebaut -- nach einer Aenderung neu bauen. Gleicher Wert wie WIDGET_ORIGIN.
+NEXT_PUBLIC_WIDGET_ORIGIN=https://therapiezentrum-ziesemer.de
 
 # --- Proxy ---
 # Immer auf "true" setzen, wenn die App hinter Nginx laeuft (was bei diesem Setup der Fall ist).
@@ -385,7 +403,7 @@ Alle bestehenden Sitzungen werden automatisch abgemeldet.
 
 ### Backup
 
-Jede Nacht um 2 Uhr entsteht eine gepruefte Kopie in `/var/backups/physiobook/` (`physiobook_<Datum>.sqlite`, dazu `latest.sqlite`). Die letzten 30 werden aufbewahrt.
+Jede Nacht um 2 Uhr entsteht eine gepruefte Kopie in `/var/backups/physiobook/` (`physiobook_<Datum>.sqlite`, dazu `latest.sqlite`). Die letzten 30 werden aufbewahrt. `deployed-commit.txt` haelt fest, welcher Code-Stand (Git-Commit) beim Backup lief, damit eine Wiederherstellung dieselbe Version bauen kann.
 
 **Manuelles Backup erstellen:**
 
@@ -448,7 +466,7 @@ sudo -u physiobook-svc sqlite3 /var/lib/physiobook/db/physiobook.sqlite "SELECT 
 | `FAILED` (attempts >= 3) | Dauerhaft fehlgeschlagen -- SMTP-Konfiguration pruefen |
 
 **Haeufige Ursachen:**
-- SMTP-Zugangsdaten falsch -- pruefe die Einstellungen in der Verwaltungsoberflaeche oder der `.env`-Datei
+- SMTP-Zugangsdaten falsch -- pruefe die Einstellungen unter "E-Mail Einstellungen" in der Weboberflaeche (haben Vorrang) oder in der `.env`-Datei. Dort laesst sich auch eine Test-E-Mail verschicken
 - Hintergrundaufgaben laufen nicht -- pruefe mit `systemctl list-timers physiobook-cron.timer` und `journalctl -u physiobook-cron`
 - Firewall blockiert ausgehende Verbindungen auf Port 587
 
@@ -482,7 +500,11 @@ Alle Einstellungen in der `.env`-Datei auf einen Blick:
 | `SMTP_FROM` | Absendername und -adresse fuer E-Mails | `"Praxis <praxis@example.com>"` |
 | `ALLOWED_ORIGIN` | Domain, auf der die App laeuft | `https://kalender.therapiezentrum-ziesemer.de` |
 | `WIDGET_ORIGIN` | Domain, die das Widget per iFrame einbettet | `https://therapiezentrum-ziesemer.de` |
+| `NEXT_PUBLIC_WIDGET_ORIGIN` | Ziel-Domain der postMessage-Events des Widgets (wird beim Build eingebaut) | `https://therapiezentrum-ziesemer.de` |
 | `TRUST_PROXY` | Immer `true` wenn hinter Nginx | `true` |
+| `HOSTNAME` | Adresse, auf der der Standalone-Server (`server.js`) lauscht | `127.0.0.1` |
+
+`JWT_SECRET`, `LOGIN_SALT`, `CRON_SECRET` und `ALLOWED_ORIGIN` sind Pflicht: Fehlen sie, wirft die App in Production beim ersten Datenbankzugriff einen Fehler (in der Entwicklung erscheint nur eine Warnung). Die SMTP-Werte sind Fallbacks -- unter "E-Mail Einstellungen" gespeicherte Werte haben Vorrang. Der Port (`PORT=3000`) und `NODE_ENV=production` werden in `deploy/systemd/physiobook.service` gesetzt.
 
 ---
 
@@ -492,12 +514,16 @@ Das Patienten-Widget (`/widget`) wird per iFrame auf `therapiezentrum-ziesemer.d
 
 ### Funktionsweise
 
-1. **CORS:** Die API-Endpunkte `/api/slots` und `/api/requests` senden CORS-Headers, wenn der Request von `WIDGET_ORIGIN` kommt
-2. **postMessage:** Das Widget meldet seine Inhaltshoehe per `window.parent.postMessage()` an die einbettende Seite -- der iFrame passt sich dynamisch an
+1. **CORS:** Die oeffentlichen API-Endpunkte `/api/slots`, `/api/slots/availability`, `/api/requests` und `/api/contact` senden CORS-Headers, wenn der Request von `WIDGET_ORIGIN` kommt
+2. **postMessage:** Das Widget meldet seine Inhaltshoehe per `window.parent.postMessage()` an die einbettende Seite (Ziel: `NEXT_PUBLIC_WIDGET_ORIGIN`) -- der iFrame passt sich dynamisch an
 3. **Events:** Das Widget sendet folgende postMessage-Events an die Parent-Seite:
    - `{ type: "physiobook-widget", event: "resize", height: <px> }` -- bei jeder Groessenaenderung
    - `{ type: "physiobook-widget", event: "step-change", step: "date"|"slot"|"form"|"success" }` -- bei Schrittwechsel
    - `{ type: "physiobook-widget", event: "success" }` -- nach erfolgreicher Terminanfrage
+
+### Kontaktformular
+
+Die Hauptwebsite kann ihr Kontaktformular an `POST /api/contact` schicken (oeffentlich, max. 5 Anfragen pro IP und Stunde). Pflichtfelder: `vorname`, `nachname`, `email`, `telefon`, `betreff`, `nachricht`; das Feld `website` dient als Honeypot gegen Bots. Die Nachricht geht per E-Mail an die Benachrichtigungs-E-Mail aus den "E-Mail Einstellungen" -- ist dort keine Adresse hinterlegt, wird nichts verschickt.
 
 ### Deployment-Reihenfolge
 
@@ -505,7 +531,8 @@ Wenn Aenderungen an der Widget-Integration gemacht werden, **immer PhysioBook zu
 
 ```bash
 # 1. PhysioBook deployen (siehe "App aktualisieren")
-sudo -u physiobook-svc -H bash -c 'set -e; cd /opt/physiobook; git pull --ff-only; npm ci; npm run build
+sudo -u physiobook-svc -H bash -c 'set -e; cd /opt/physiobook; git pull --ff-only; npm ci
+  set -a; . ./.env; set +a; npx tsx src/lib/db/migrate.ts; npm run build
   cp -r .next/static .next/standalone/.next/static; cp -r public .next/standalone/public'
 sudo systemctl restart physiobook
 
